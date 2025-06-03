@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="32" height="32" rx="8" fill="transparent"/>
+    
+    <!-- Document shape -->
+    <rect x="8" y="8" width="16" height="16" rx="2" fill="white"/>
+    
+    <!-- Text lines -->
+    <rect x="10" y="12" width="12" height="1.5" rx="0.75" fill="black"/>
+    <rect x="10" y="14" width="12" height="1.5" rx="0.75" fill="black"/>
+    <rect x="10" y="16" width="9" height="1.5" rx="0.75" fill="black"/>
+    
+    <!-- Corner fold -->
+    <path d="M8 8L12 8L8 12L8 8Z" fill="#E8F0FE"/>
+</svg> 

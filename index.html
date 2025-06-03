@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PaperSide</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        #textArea {
+            width: 100%;
+            border: none;
+            resize: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 0;
+            flex-grow: 1;
+        }
+
+        #action-area{
+            display: flex;
+        }
+
+        #status {
+            font-size: 12px;
+            color: #666;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .button {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        .button:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        #currentLocation {
+            font-size: 10px;
+            color: #999;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .rtl {
+            direction: rtl;
+            text-align: right;
+        }
+
+        .ltr {
+            direction: ltr;
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+    <textarea id="textArea" placeholder="Select a file to begin..."></textarea>
+    <div id="currentLocation"></div>
+    <div id="action-area">
+        <button id="openButton" class="button">Open/Create</button>
+        <button id="saveButton" class="button">Save</button>
+        <button id="hideButton" class="button">Hide</button>
+        <button id="closeButton" class="button">Close</button>
+        <button id="directionButton" class="button">RTL/LTR</button>
+        <div id="status">Saved</div>
+    </div>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        const textArea = document.getElementById('textArea');
+        const status = document.getElementById('status');
+        const saveButton = document.getElementById('saveButton');
+        const openButton = document.getElementById('openButton');
+        const hideButton = document.getElementById('hideButton');
+        const closeButton = document.getElementById('closeButton');
+        const directionButton = document.getElementById('directionButton');
+        const currentLocation = document.getElementById('currentLocation');
+        let saveTimeout;
+        let currentDirection = 'ltr';
+
+        // Handle file selection on startup
+        ipcRenderer.on('file-selected', async (event, filePath, content) => {
+            currentLocation.textContent = `Current file: ${filePath}`;
+            textArea.value = content || '';
+        });
+
+        // Save content on change
+        textArea.addEventListener('input', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                ipcRenderer.send('save-content', textArea.value);
+                status.style.opacity = '1';
+                setTimeout(() => {
+                    status.style.opacity = '0';
+                }, 1000);
+            }, 500);
+        });
+
+        // Handle manual save
+        saveButton.addEventListener('click', () => {
+            ipcRenderer.send('save-content', textArea.value);
+            status.style.opacity = '1';
+            setTimeout(() => {
+                status.style.opacity = '0';
+            }, 1000);
+        });
+
+        // Handle open or create file
+        openButton.addEventListener('click', async () => {
+            const filePath = await ipcRenderer.invoke('open-or-create-file');
+            if (filePath) {
+                currentLocation.textContent = `Current file: ${filePath}`;
+                const content = await ipcRenderer.invoke('load-content');
+                textArea.value = content;
+            }
+        });
+
+        // Handle hide button
+        hideButton.addEventListener('click', () => {
+            ipcRenderer.send('hide-window');
+        });
+
+        // Handle close button
+        closeButton.addEventListener('click', () => {
+            ipcRenderer.send('quit-app');
+        });
+
+        // Handle direction toggle
+        directionButton.addEventListener('click', async () => {
+            currentDirection = currentDirection === 'ltr' ? 'rtl' : 'ltr';
+            textArea.className = currentDirection;
+            // Save the direction state
+            ipcRenderer.send('save-direction', currentDirection);
+        });
+
+        // Load saved direction on startup
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedDirection = await ipcRenderer.invoke('load-direction');
+            if (savedDirection) {
+                currentDirection = savedDirection;
+                textArea.className = currentDirection;
+            }
+        });
+
+        // Handle keyboard shortcuts for direction
+        textArea.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                directionButton.click();
+            }
+        });
+
+        // Add event listeners for date and time insertion
+        ipcRenderer.on('insert-date', () => {
+            console.log('Received insert-date event');
+            const now = new Date();
+            const dateStr = now.toLocaleDateString();
+            insertTextAtCursor(dateStr);
+        });
+
+        ipcRenderer.on('insert-time', () => {
+            console.log('Received insert-time event');
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            insertTextAtCursor(timeStr);
+        });
+
+        // Function to insert text at cursor position
+        function insertTextAtCursor(text) {
+            const start = textArea.selectionStart;
+            const end = textArea.selectionEnd;
+            const currentText = textArea.value;
+            
+            textArea.value = currentText.substring(0, start) + text + currentText.substring(end);
+            textArea.selectionStart = textArea.selectionEnd = start + text.length;
+            textArea.focus();
+            
+            // Trigger save
+            ipcRenderer.send('save-content', textArea.value);
+        }
+    </script>
+</body>
+
+</html>
