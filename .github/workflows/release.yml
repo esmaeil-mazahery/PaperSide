@@ -30,7 +30,7 @@ jobs:
           git checkout -b temp-branch
           git add package-lock.json
           git commit -m "chore: update package-lock.json"
-          git push https://${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git temp-branch
+          git push -f https://${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git temp-branch
           git checkout -
 
       - name: Build
