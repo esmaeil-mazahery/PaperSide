@@ -1,6 +1,6 @@
 {
   "name": "paperside",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A simple text widget for macOS",
   "main": "main.js",
   "scripts": {
