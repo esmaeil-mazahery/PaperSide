@@ -40,9 +40,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
 
+      - name: Install GitHub CLI
+        run: |
+          brew install gh
+
       - name: Delete existing release
         if: startsWith(github.ref, 'refs/tags/')
         run: |
+          # Delete all assets from the release
+          gh release delete-asset "${{ github.ref_name }}" "*" --yes || true
+          # Delete the release itself
           gh release delete "${{ github.ref_name }}" --yes || true
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
